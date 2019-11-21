@@ -26,15 +26,13 @@ Currently, basic manipulations are supported:
 
 Input Image:
 
-<img src="./static/rider.png" width="200">
-
 ```crystal
 img = Image.from_file("./static/rider.png", 1)
 gray = img.grayscale
 gray.save("./static/gray_rider.png")
 ```
 
-<img src="./static/gray_rider" width="200">
+<img src="./static/grayscale.png" width="200">
 
 
 ## Contributing
