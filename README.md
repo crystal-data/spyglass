@@ -25,7 +25,7 @@ require "spyglass"
 Currently, basic manipulations are supported:
 
 ```crystal
-img = Image.from_file("rider.png", 1)
+img = Image.from_file("rider.png")
 gray = img.grayscale
 gray.save("grayscale.png")
 ```
