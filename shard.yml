@@ -1,0 +1,14 @@
+name: spyglass
+version: 0.1.0
+
+dependencies:
+  bottle:
+    github: crystal-data/bottle
+    branch: master
+
+authors:
+  - Chris Zimmerman <chris-zimmerman@live.com>
+
+crystal: 0.31.1
+
+license: MIT
