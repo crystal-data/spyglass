@@ -24,15 +24,21 @@ require "spyglass"
 
 Currently, basic manipulations are supported:
 
-Input Image:
-
 ```crystal
-img = Image.from_file("./static/rider.png", 1)
+img = Image.from_file("rider.png", 1)
 gray = img.grayscale
-gray.save("./static/gray_rider.png")
+gray.save("grayscale.png")
 ```
 
 ![](./static/grayscale.png)
+
+```crystal
+img = Image.from_file("stop.jpg", 1)
+binary = img.otsu
+binary.save("binary_dilation.png")
+```
+
+![](./static/binary_dilation.png)
 
 
 ## Contributing
