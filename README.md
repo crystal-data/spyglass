@@ -32,7 +32,7 @@ gray = img.grayscale
 gray.save("./static/gray_rider.png")
 ```
 
-<img src="./static/grayscale.png" width="200">
+![](./static/grayscale.png)
 
 
 ## Contributing
