@@ -26,7 +26,7 @@ Currently, basic manipulations are supported:
 
 Input Image:
 
-![](./static/rider.png | width=200)
+![](./static/rider.png)
 
 ```crystal
 img = Image.from_file("./static/rider.png", 1)
@@ -34,7 +34,7 @@ gray = img.grayscale
 gray.save("./static/gray_rider.png")
 ```
 
-![](./static/gray_rider.png | width=200)
+![](./static/gray_rider.png)
 
 
 ## Contributing
