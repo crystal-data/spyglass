@@ -12,5 +12,12 @@ module Spyglass
     def self.from_sodpts(pts : LibSod::SodPts)
       new(pts.x.to_i, pts.y.to_i)
     end
+
+    def to_sodpts
+      pts = LibSod::SodPts.new
+      pts.x = @x
+      pts.y = @y
+      pts
+    end
   end
 end

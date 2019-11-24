@@ -21,34 +21,13 @@ module Spyglass
       raise "Couldn't find an image at '#{filename}'" unless File.exists?(filename)
 
       img = LibSod.sod_img_load_from_file(filename, channels)
-      shape = [img.h, img.w, img.c]
-      strides = [0] * shape.size
-      sz = 1
-
-      shape.size.times do |i|
-        strides[img.c - i - 1] = sz
-        sz *= shape[img.c - i - 1]
-      end
-
-      flags = Bottle::Internal::ArrayFlags::Contiguous
-      tns = Bottle::Tensor.new(img.data, shape, strides, flags, nil)
+      tns = self.create_tensor(img)
 
       new(img, tns, filename)
     end
 
     def self.new(img : LibSod::SodImg)
-      shape = [img.h, img.w, img.c]
-      strides = [0] * shape.size
-      sz = 1
-
-      shape.size.times do |i|
-        strides[img.c - i - 1] = sz
-        sz *= shape[img.c - i - 1]
-      end
-
-      flags = Bottle::Internal::ArrayFlags::Contiguous
-      tns = Bottle::Tensor.new(img.data, shape, strides, flags, nil)
-
+      tns = self.create_tensor(img)
       new(img, tns, "")
     end
 
@@ -356,23 +335,23 @@ module Spyglass
     # with the CNN/Realnet interfaces for example to mark a detected object (i.e. car, plane,
     # person, etc.) coordinates. When done, you can save the output on disk
     # `Image#save` for instance.
-    def draw_box(box : LibSod::SodBox, rgb : RGBColor)
+    def draw_box(box : Spyglass::Box, rgb : RGBColor)
       tmp = copy
-      LibSod.sod_image_draw_box(tmp, box, rgb[0].to_f, rgb[1].to_f, rgb[2].to_f)
+      LibSod.sod_image_draw_box(tmp, box.to_sodbox, rgb[0].to_f, rgb[1].to_f, rgb[2].to_f)
       Image.new(tmp)
     end
 
     # Draw a single box (i.e. rectangle) on an input image with a specified width. See `Image#draw_box`.
-    def draw_box(box : LibSod::SodBox, width : Number, rgb : RGBColor)
+    def draw_box(box : Spyglass::Box, width : Number, rgb : RGBColor)
       tmp = copy
-      LibSod.sod_image_draw_box_width(tmp, box, width.to_i, rgb[0].to_f, rgb[1].to_f, rgb[2].to_f)
+      LibSod.sod_image_draw_box_width(tmp, box.to_sodbox, width.to_i, rgb[0].to_f, rgb[1].to_f, rgb[2].to_f)
       Image.new(tmp)
     end
 
     # Draw a single line on an input image.
-    def draw_line(start : LibSod::SodPts, stop : LibSod::SodPts, rgb : RGBColor)
+    def draw_line(start : Spyglass::Points, stop : Spyglass::Points, rgb : RGBColor)
       tmp = copy
-      LibSod.sod_image_draw_line(tmp, start.to_i, stop.to_i, rgb[0].to_f, rgb[1].to_f, rgb[2].to_f)
+      LibSod.sod_image_draw_line(tmp, start.to_sodpts, stop.to_sodpts, rgb[0].to_f, rgb[1].to_f, rgb[2].to_f)
       Image.new(tmp)
     end
 
@@ -449,10 +428,7 @@ module Spyglass
     # Perform constant value multiplication on each pixel of a given image (Image Arithmetic). If you
     # want to process a single channel, then call `Image.scale_channel` instead.
     def scale(s : Float64)
-      unless (0.0..1.0).includes?(s)
-        raise "Scale value must be between 0 and 1"
-      end
-
+      ensure_unit_interval(s)
       tmp = copy
       LibSod.sod_scale_image(tmp, s.to_f)
       Image.new(tmp)
@@ -469,9 +445,7 @@ module Spyglass
     # Perform constant value multiplication on each pixel of a selected color channel unlike
     # `Image#scale` which process the entire image (i.e. all channels).
     def scale_channel(channel : Channel, s : Float64)
-      unless (0.0..1.0).includes?(s)
-        raise "Scale value must be between 0 and 1"
-      end
+      ensure_unit_interval(s)
 
       tmp = copy
       LibSod.sod_scale_image_channel(tmp, channel.value, s)
@@ -481,10 +455,7 @@ module Spyglass
     # Perform constant value addition on each pixel of a selected color channel unlike
     # `Image#translate` which process the entire image (i.e. all channels).
     def translate_channel(channel : Channel, s : Float64)
-      unless (0.0..1.0).includes?(s)
-        raise "Translate value must be between 0 and 1"
-      end
-
+      ensure_unit_interval(s)
       tmp = copy
       LibSod.sod_translate_image_channel(tmp, channel.value, s)
       Image.new(tmp)
@@ -533,10 +504,7 @@ module Spyglass
 
     # Retrieve the pixel value at a given location.
     def set_pixel(x : Int32, y : Int32, channel : Channel, value : Float64)
-      unless (0.0..1.0).includes?(value)
-        raise "Pixel value must be between 0 and 1"
-      end
-
+      ensure_unit_interval(value)
       LibSod.sod_img_set_pixel(@image, x, y, channel.value, value)
     end
 
@@ -544,6 +512,27 @@ module Spyglass
     def get_channel(channel : Channel)
       img = LibSod.sod_img_get_layer(channel.value)
       Image.new(img)
+    end
+
+    # Creates a `Bottle::Tensor` from the image data.
+    private def self.create_tensor(img : LibSod::SodImg)
+      shape = [img.h, img.w, img.c]
+      strides = [0] * shape.size
+      sz = 1
+
+      shape.size.times do |i|
+        strides[img.c - i - 1] = sz
+        sz *= shape[img.c - i - 1]
+      end
+
+      flags = Bottle::Internal::ArrayFlags::Contiguous
+      Bottle::Tensor.new(img.data, shape, strides, flags, nil)
+    end
+
+    private def ensure_unit_interval(value : Float64)
+      unless (0.0..1.0).includes?(s)
+        raise "Value must be between 0 and 1"
+      end
     end
   end
 end

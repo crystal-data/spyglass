@@ -36,5 +36,17 @@ module Spyglass
         box.p_user_data
       )
     end
+
+    def to_sodbox
+      box = LibSod::SodBox
+      box.x = @x
+      box.y = @y
+      box.w = @width
+      box.h = @height
+      box.score = @score
+      box.z_name = @name
+      box.p_user_data = @user_data
+      box
+    end
   end
 end
