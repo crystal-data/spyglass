@@ -3,9 +3,10 @@ module Spyglass
     alias RGBColor = Tuple(Float64, Float64, Float64)
 
     enum Channel
-      Red
-      Green
-      Blue
+      Grayscale = 0
+      Red       = 0
+      Green     = 1
+      Blue      = 2
     end
 
     getter image : LibSod::SodImg
@@ -15,7 +16,10 @@ module Spyglass
     private def initialize(@image, @data, @path)
     end
 
+    # Open a file as an `Image` instance.
     def self.open(filename : String, channels = 0)
+      raise "Couldn't find an image at '#{filename}'" unless File.exists?(filename)
+
       img = LibSod.sod_img_load_from_file(filename, channels)
       shape = [img.h, img.w, img.c]
       strides = [0] * shape.size
@@ -32,7 +36,7 @@ module Spyglass
       new(img, tns, filename)
     end
 
-    def self.new(img)
+    def self.new(img : LibSod::SodImg)
       shape = [img.h, img.w, img.c]
       strides = [0] * shape.size
       sz = 1
@@ -48,18 +52,22 @@ module Spyglass
       new(img, tns, "")
     end
 
+    # Generate an `Image` with randomly placed pixels.
     def self.random(width : Int32, height : Int32, grayscale : Bool = false)
       channels = grayscale ? 1 : 3
       img = LibSod.sod_make_random_image(width, height, channels)
       Image.new(img)
     end
 
+    # Generate a new empty `Image` with no pixel data.
     def self.empty(width : Int32, height : Int32, grayscale : Bool = false)
       channels = grayscale ? 1 : 3
       img = LibSod.sod_make_image(width, height, channels)
       Image.new(img)
     end
 
+    # Returns a list of `Images` for a directory. Same as looping over the
+    # directory and calling `Image.open` on each image.
     def self.from_directory(path : String, max_entries : Int32 = 0)
       count_ptr = Pointer(Int32).malloc
       set_ptr = Pointer(Pointer(LibSod::SodImg)).malloc
@@ -73,29 +81,60 @@ module Spyglass
       end
     end
 
+    # Get the RGB color at a given index. If the image is
+    # grayscale just use `Image#get_pixel`.
+    def [](x : Int32, y : Int32)
+      raise "Please use `get_pixel` for grayscale images" if grayscale?
+      r = get_pixel(x, y, :red)
+      g = get_pixel(x, y, :green)
+      b = get_pixel(x, y, :blue)
+      {r, g, b}
+    end
+
+    # Set the RGB color at a given index. If the image is
+    # grayscale just use `Image#set_pixel`.
+    def []=(x : Int32, y : Int32, color : RGBColor)
+      raise "Please use `set_pixel` for grayscale images" if grayscale?
+      [0, 1, 2].each do |i|
+        set_pixel(x, y, i, color[i])
+      end
+    end
+
+    # The width of this image
     def width
       @image.w
     end
 
+    # The height of this image
     def height
       @image.h
     end
 
+    # Total number of color channels.
+    # 1 for grayscale, 3 for a normal color image.
     def channel_count
       @image.c
     end
 
+    # Raw image data
     def blob
       @image.data
     end
 
-    def save(filename : String)
+    # Is this image grayscale? (i.e. only has 1 color channel)
+    def grayscale?
+      channel_count == 1
+    end
+
+    # Save this image to a file. If saving as `.jpg` you can use
+    # the optional `quality` argument.
+    def save(filename : String, quality : Number = -1)
       ext = File.extname(filename)
       case ext
       when  ".png"
         LibSod.sod_img_save_as_png(@image, filename)
-      when ".jpg"
-        LibSod.sod_img_save_as_jpg(@image, filename)
+      when ".jpg", ".jpeg"
+        LibSod.sod_img_save_as_jpeg(@image, filename, quality)
       else
         raise "Unsupported file extension '#{ext}'"
       end
@@ -146,15 +185,16 @@ module Spyglass
     # Perform hough line detection on an input image. The target image must be processed
     # via `Image#canny_edge` before this call. When done, you can draw the detected
     # lines via `Image#draw_line`.
-    def hough_lines_detect(threshold : Number = 0)
+    def detect_lines(threshold : Number = 0)
       npts_ptr = Pointer(Int32).malloc
       alines = LibSod.sod_hough_lines_detect(@image, threshold.to_i, npts_ptr)
 
       npts = npts_ptr.value
       nlines = npts > 1 ? npts // 2 : 0
 
-      pts_arr = Array(LibSod::SodPts).new(nlines) do |i|
-        alines[i]
+      pts_arr = Array(Spyglass::Points).new(nlines) do |i|
+        pts = alines[i]
+        Spyglass::Points.from_sodpts(pts)
       end
       LibSod.sod_hough_lines_release(alines)
 
@@ -173,8 +213,9 @@ module Spyglass
 
       LibSod.sod_image_find_blobs(@image, pabox, pnbox, filter)
 
-      blobs = Array(LibSod::SodBox).new(pnbox.value) do |i|
-        pabox[0][i]
+      blobs = Array(Spyglass::Box).new(pnbox.value) do |i|
+        box = pabox[0][i]
+        Spyglass::Box.from_sodbox(box)
       end
 
       LibSod.sod_image_blob_boxes_release(pabox[0])
@@ -479,8 +520,30 @@ module Spyglass
       Image.new(img)
     end
 
+    # Copy an image, creating a new instance and
+    # leaving the original untouched.
     def copy
       Image.new(LibSod.sod_copy_image(@image))
+    end
+
+    # Retrieve the pixel value at a given location.
+    def get_pixel(x : Int32, y : Int32, channel : Channel)
+      LibSod.sod_img_get_pixel(@image, x, y, channel.value)
+    end
+
+    # Retrieve the pixel value at a given location.
+    def set_pixel(x : Int32, y : Int32, channel : Channel, value : Float64)
+      unless (0.0..1.0).includes?(value)
+        raise "Pixel value must be between 0 and 1"
+      end
+
+      LibSod.sod_img_set_pixel(@image, x, y, channel.value, value)
+    end
+
+    # Extract a color channel from a given image.
+    def get_channel(channel : Channel)
+      img = LibSod.sod_img_get_layer(channel.value)
+      Image.new(img)
     end
   end
 end
