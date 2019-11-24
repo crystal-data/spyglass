@@ -416,10 +416,7 @@ module Spyglass
     # Perform constant value addition on each pixel of a given image (Image Arithmetic). If you
     # want to process a single channel, then call `Image.translate_channel` instead.
     def translate(s : Float64)
-      unless (0.0..1.0).includes?(s)
-        raise "Translate value must be between 0 and 1"
-      end
-
+      ensure_unit_interval(s)
       tmp = copy
       LibSod.sod_translate_image(tmp, s)
       Image.new(tmp)
