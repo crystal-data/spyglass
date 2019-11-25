@@ -278,7 +278,7 @@ module Spyglass
 
     # Creates a vertical mirror image by reflecting the pixels around the central X axis.
     def flip
-      tmp = copy
+      tmp = copy.image
       LibSod.sod_flip_image(tmp)
       Image.new(tmp)
     end
@@ -319,14 +319,14 @@ module Spyglass
     # plane, person, etc.) coordinates. When done, you can save the output
     # on disk via `Image#save` for instance.
     def draw_box(x1 : Number, y1 : Number, x2 : Number, y2 : Number, rgb : RGBColor)
-      tmp = copy
+      tmp = copy.image
       LibSod.sod_image_draw_box(tmp, x1.to_i32, y1.to_i32, x2.to_i32, y2.to_i32, rgb[0].to_f, rgb[1].to_f, rgb[2].to_f)
       Image.new(tmp)
     end
 
     # Draw a single box (i.e. rectangle) on an input grayscale image. See `Image#draw_box`.
     def draw_box_grayscale(x1 : Number, y1 : Number, x2 : Number, y2 : Number, g : Number)
-      tmp = copy
+      tmp = copy.image
       LibSod.sod_image_draw_box_grayscale(tmp, x1.to_i32, y1.to_i32, x2.to_i32, y2.to_i32, g.to_f)
       Image.new(tmp)
     end
@@ -336,21 +336,21 @@ module Spyglass
     # person, etc.) coordinates. When done, you can save the output on disk
     # `Image#save` for instance.
     def draw_box(box : Spyglass::Box, rgb : RGBColor)
-      tmp = copy
+      tmp = copy.image
       LibSod.sod_image_draw_box(tmp, box.to_sodbox, rgb[0].to_f, rgb[1].to_f, rgb[2].to_f)
       Image.new(tmp)
     end
 
     # Draw a single box (i.e. rectangle) on an input image with a specified width. See `Image#draw_box`.
     def draw_box(box : Spyglass::Box, width : Number, rgb : RGBColor)
-      tmp = copy
-      LibSod.sod_image_draw_box_width(tmp, box.to_sodbox, width.to_i, rgb[0].to_f, rgb[1].to_f, rgb[2].to_f)
+      tmp = copy.image
+      LibSod.sod_image_draw_bbox_width(tmp, box.to_sodbox, width.to_i, rgb[0].to_f, rgb[1].to_f, rgb[2].to_f)
       Image.new(tmp)
     end
 
     # Draw a single line on an input image.
     def draw_line(start : Spyglass::Points, stop : Spyglass::Points, rgb : RGBColor)
-      tmp = copy
+      tmp = copy.image
       LibSod.sod_image_draw_line(tmp, start.to_sodpts, stop.to_sodpts, rgb[0].to_f, rgb[1].to_f, rgb[2].to_f)
       Image.new(tmp)
     end
@@ -359,21 +359,21 @@ module Spyglass
     # useful when working with the CNN/Realnet interfaces for example to mark a region of
     # interest (i.e. face) coordinates.
     def draw_circle(x : Number, y : Number, radius : Number, rgb : RGBColor)
-      tmp = copy
+      tmp = copy.image
       LibSod.sod_image_draw_circle(tmp, x.to_i, y.to_i, radius.to_i, rgb[0].to_f, rgb[1].to_f, rgb[2].to_f)
       Image.new(tmp)
     end
 
     # Draw a single circle with a certain thickness via the Midpoint Circle Algorithm. See `Image.draw_circle`.
     def draw_circle(x : Number, y : Number, radius : Number, width : Number, rgb : RGBColor)
-      tmp = copy
+      tmp = copy.image
       LibSod.sod_image_draw_circle(tmp, x.to_i, y.to_i, radius.to_i, width.to_i, rgb[0].to_f, rgb[1].to_f, rgb[2].to_f)
       Image.new(tmp)
     end
 
     # Scale an input image to the desired dimension.
     def resize(width : Number, height : Number)
-      tmp = copy
+      tmp = copy.image
       LibSod.sod_resize_image(tmp, width.to_i, height.to_i)
       Image.new(tmp)
     end
@@ -382,7 +382,7 @@ module Spyglass
     # from the image width or height). For standard image resizing, please rely on
     # `Image#resize` instead.
     def resize_max(max : Number)
-      tmp = copy
+      tmp = copy.image
       LibSod.sod_resize_max(tmp, max.to_i)
       Image.new(tmp)
     end
@@ -391,7 +391,7 @@ module Spyglass
     # from the image width or height). For standard image resizing, please rely on
     # `Image#resize` instead.
     def resize_min(min : Number)
-      tmp = copy
+      tmp = copy.image
       LibSod.sod_resize_min(tmp, min.to_i)
       Image.new(tmp)
     end
@@ -399,7 +399,7 @@ module Spyglass
     # Extract a random region from an input image. For standard image cropping, you should
     # rely on `Image#crop` instead.
     def random_crop(width : Number, height : Number)
-      tmp = copy
+      tmp = copy.image
       LibSod.sod_random_crop_image(tmp, width.to_i, height.to_i)
       Image.new(tmp)
     end
@@ -408,7 +408,7 @@ module Spyglass
     # cropping, rotation & scaling you should rely respectively on `Image#crop`,
     # `Image#rotate` and `Image#scale`.
     def random_augment(angle : Number, aspect : Number, low : Number, high : Number, size : Number)
-      tmp = copy
+      tmp = copy.image
       LibSod.sod_random_augment_image(tmp, angle.to_f, aspect.to_f, low.to_i, high.to_i, size.to_i)
       Image.new(tmp)
     end
@@ -417,7 +417,7 @@ module Spyglass
     # want to process a single channel, then call `Image.translate_channel` instead.
     def translate(s : Float64)
       ensure_unit_interval(s)
-      tmp = copy
+      tmp = copy.image
       LibSod.sod_translate_image(tmp, s)
       Image.new(tmp)
     end
@@ -426,7 +426,7 @@ module Spyglass
     # want to process a single channel, then call `Image.scale_channel` instead.
     def scale(s : Float64)
       ensure_unit_interval(s)
-      tmp = copy
+      tmp = copy.image
       LibSod.sod_scale_image(tmp, s.to_f)
       Image.new(tmp)
     end
@@ -444,7 +444,7 @@ module Spyglass
     def scale_channel(channel : Channel, s : Float64)
       ensure_unit_interval(s)
 
-      tmp = copy
+      tmp = copy.image
       LibSod.sod_scale_image_channel(tmp, channel.value, s)
       Image.new(tmp)
     end
@@ -453,7 +453,7 @@ module Spyglass
     # `Image#translate` which process the entire image (i.e. all channels).
     def translate_channel(channel : Channel, s : Float64)
       ensure_unit_interval(s)
-      tmp = copy
+      tmp = copy.image
       LibSod.sod_translate_image_channel(tmp, channel.value, s)
       Image.new(tmp)
     end
@@ -461,7 +461,7 @@ module Spyglass
     # Enhances the contrast of a color image by adjusting the pixels color to span the entire
     # range of colors available.
     def normalize
-      tmp = copy
+      tmp = copy.image
       LibSod.sod_normalize_image(tmp)
       Image.new(tmp)
     end
@@ -469,21 +469,21 @@ module Spyglass
     # Creates a vertical mirror image by reflecting the pixels around the central X axis while
     # rotating them 90-degrees.
     def transpose
-      tmp = copy
+      tmp = copy.image
       LibSod.sod_transpose_image(tmp)
       Image.new(tmp)
     end
 
     # Rotates an image the specified number of degrees (in radians).
     def rotate(degrees : Number)
-      tmp = copy
+      tmp = copy.image
       img = LibSod.sod_rotate_image(tmp, degrees.to_f)
       Image.new(img)
     end
 
     # Extract a region from a given image.
     def crop(width : Number, height : Number, offset_x : Number, offset_y : Number)
-      tmp = copy
+      tmp = copy.image
       img = LibSod.sod_crop_image(tmp, width.to_i, height.to_i, offset_x.to_i, offset_y.to_i)
       Image.new(img)
     end
