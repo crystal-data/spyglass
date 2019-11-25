@@ -1,5 +1,5 @@
-require "./img/frame"
-
-module Spyglass
-  VERSION = "0.1.0"
-end
+require "bottle"
+require "./lib/sod"
+require "./spyglass/box"
+require "./spyglass/points"
+require "./spyglass/image"

@@ -6,6 +6,8 @@ images using N-Dimensional Tensors from Bottle.
 
 ## Installation
 
+You will need clang installed in order to build the sod library.
+
 1. Add the dependency to your `shard.yml`:
 
    ```yaml
@@ -25,7 +27,7 @@ require "spyglass"
 Currently, basic manipulations are supported:
 
 ```crystal
-img = Image.from_file("rider.png")
+img = Spyglass::Image.from_file("rider.png")
 gray = img.grayscale
 gray.save("grayscale.png")
 ```
@@ -33,7 +35,7 @@ gray.save("grayscale.png")
 ![](./static/grayscale.png)
 
 ```crystal
-img = Image.from_file("stop.jpg", 1)
+img = Spyglass::Image.from_file("stop.jpg", 1)
 binary = img.otsu
 binary.save("binary_dilation.png")
 ```
