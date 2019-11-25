@@ -488,6 +488,11 @@ module Spyglass
       Image.new(img)
     end
 
+    # ditto
+    def crop(box : Spyglass::Box)
+      crop(box.width, box.height, box.x, box.y)
+    end
+
     # Copy an image, creating a new instance and
     # leaving the original untouched.
     def copy
